@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<component name="ChannelItem" extends="Group">
+    <interface>
+        <field id="itemContent" type="node" onChange="showcontent"/>
+    </interface>
+    
+    <children>
+        <Rectangle
+            id="itemBackground"
+            width="300"
+            height="260"
+            color="0x404040FF"
+            opacity="0.9">
+            
+            <Poster
+                id="itemPoster"
+                width="300"
+                height="200"
+                loadDisplayMode="scaleToFit"
+                failedBitmapUri="pkg:/images/channel_placeholder.png"/>
+            
+            <Label
+                id="itemTitle"
+                translation="[10, 210]"
+                width="280"
+                height="40"
+                horizAlign="left"
+                vertAlign="center"
+                font="font:SmallBoldSystemFont"
+                color="0xFFFFFFFF"
+                wrap="true"
+                maxLines="2"
+                ellipsizeOnBoundary="true"/>
+        </Rectangle>
+        
+        <Rectangle
+            id="focusIndicator"
+            width="300"
+            height="260"
+            color="0x00A0FFFF"
+            opacity="0.0"
+            blendColor="0x00A0FF"/>
+    </children>
+    
+    <script type="text/brightscript" uri="pkg:/components/ChannelItem/ChannelItem.brs"/>
+</component>

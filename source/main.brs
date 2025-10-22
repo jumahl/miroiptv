@@ -6,7 +6,8 @@ sub Main()
     if reg.Exists("primaryfeed") then
         url = reg.Read("primaryfeed")
     else
-        url = "https://tinyurl.com/yaoc6zpo"
+        ' URL por defecto - Canales de Colombia
+        url = "https://www.m3u.cl/lista/CO.m3u"
     end if
 
     screen = CreateObject("roSGScreen")

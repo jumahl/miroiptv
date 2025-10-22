@@ -5,17 +5,87 @@
 <component name="MainScene" extends="Scene" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://rokudev.roku.com/rokudev/schema/RokuSceneGraph.xsd">
 <script type="text/brightscript" uri="pkg:/components/MainScene/MainScene.brs"/>
 <children>
-    <LabelList
-    	id="list"
-    	translation = "[150, 150]"
-    	/>
-    	
-    <Video
-    id="Video"
-    translation = "[800, 100]"
-    width = "960"
-    height= "540"/>
+    <!-- Panel lateral izquierdo con listas -->
+    <Rectangle
+        id="sidePanel"
+        translation="[0, 0]"
+        width="350"
+        height="1080"
+        color="0x000000DD"
+        visible="true">
+        
+        <Label
+            id="appTitle"
+            translation="[20, 30]"
+            text="MiroIPTV"
+            font="font:LargeBoldSystemFont"
+            color="0xFFFFFFFF"
+            width="310"/>
+            
+        <LabelList
+            id="playlistList"
+            translation="[20, 120]"
+            itemSize="[310, 60]"
+            numRows="12"
+            itemSpacing="[0, 10]"/>
+    </Rectangle>
     
+    <!-- Lista simple de canales -->
+    <LabelList
+    	id="channelList"
+    	translation="[370, 80]"
+    	itemSize="[1100, 50]"
+    	numRows="16"
+    	itemSpacing="[0, 5]"
+    	visible="true"/>
+    
+    <!-- Video player en pantalla completa -->
+    <Video
+        id="Video"
+        translation="[0, 0]"
+        width="1920"
+        height="1080"
+        visible="false"/>
+    
+    <!-- Overlay de canales (superpuesto sobre el video) -->
+    <Rectangle
+        id="channelOverlay"
+        translation="[50, 100]"
+        width="500"
+        height="880"
+        color="0x000000DD"
+        visible="false">
+        
+        <Label
+            id="overlayTitle"
+            translation="[20, 20]"
+            text="Canales"
+            font="font:MediumBoldSystemFont"
+            color="0xFFFFFFFF"
+            width="460"/>
+        
+        <LabelList
+            id="channelOverlayList"
+            translation="[20, 80]"
+            itemSize="[460, 50]"
+            numRows="15"
+            itemSpacing="[0, 5]"/>
+    </Rectangle>
+    
+    <!-- Loading indicator -->
+    <Label
+    	id="loadingSpinner"
+    	translation="[860, 540]"
+    	text="Cargando lista..."
+    	visible="false"
+    	horizAlign="center"
+    	vertAlign="center"
+    	width="400"
+    	height="60"
+    	color="0xFFFFFFFF"
+    	font="font:LargeBoldSystemFont"/>
+    
+    <!-- Componentes de fondo -->
     <get_channel_list
     	id="get_channel_list"
     	control="STOP"/>
