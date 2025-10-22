@@ -1,150 +1,72 @@
 # MiroIPTV
 
-Modern IPTV player for Roku with clean interface
+Reproductor IPTV moderno para Roku con interfaz limpia y navegación rápida.
 
-## Features
+## 🎯 Características
 
-- ✅ **Simple List Interface** - Clean channel list with easy navigation
-- ✅ **Multiple Playlists** - Save and switch between different M3U lists
-- ✅ **Quick Switching** - Easy access to all your playlists from sidebar
-- ✅ **Multi-format Support** - HLS, MP4, MKV, AVI, and 20+ formats
-- ✅ **Side Navigation** - Easy playlist browsing
-- ✅ **Fast Loading** - Optimized for large playlists
-- ✅ **URL Validation** - Smart error handling
-- ✅ **Default Playlist** - Colombian channels (CO.m3u) included
+- **Lista Simple** - Navegación fácil por todos tus canales
+- **Múltiples Listas M3U** - Guarda y cambia entre diferentes playlists
+- **Cambio Rápido** - Zapea canales con flechas ↑↓ mientras ves TV
+- **Menú Flotante** - Presiona ← para ver canales sin pausar el video
+- **Pantalla Completa** - Video en 1920x1080 sin bordes negros
+- **Multi-formato** - HLS, MP4, MKV, AVI y más de 20 formatos
 
-## Installation
+## 📥 Instalación
 
-### Quick Install (Sideload)
+1. **Activa Developer Mode en tu Roku:**
+   - Presiona: Home 3x, Up 2x, Right, Left, Right, Left, Right
 
-1. Enable Developer Mode on your Roku:
-   - Press Home 3x, Up 2x, Right, Left, Right, Left, Right
-   - Follow the on-screen instructions
-2. Build the package:
 
-   ```powershell
-   .\build.ps1
-   ```
+3. **Instala en Roku:**
+   - Abre `http://TU_IP_ROKU` en tu navegador
+   - Sube el archivo `SimpleIPTVRoku.zip`
 
-   This creates `SimpleIPTVRoku.zip`
+## 🎮 Controles
 
-3. Install on Roku:
-   - Go to `http://YOUR_ROKU_IP` in your browser
-   - Upload `SimpleIPTVRoku.zip`
+### Menú Principal
 
-Detailed tutorial: https://www.howtogeek.com/290787/how-to-enable-developer-mode-and-sideload-roku-apps/
+- **←→** Cambiar entre menú de playlists y lista de canales
+- **↑↓** Navegar por playlists o canales
+- **OK** Reproducir canal seleccionado
+- **Options** Agregar nueva playlist M3U
 
-## Usage
+### Durante Reproducción
 
-### Navigation
+- **←** Mostrar/ocultar menú de canales (el video sigue!)
+- **↑** Canal anterior (zapping instantáneo)
+- **↓** Canal siguiente (zapping instantáneo)
+- **Back** Volver al menú principal
 
-- **Left/Right Arrows**: Switch between playlist menu and channel list
-- **Up/Down Arrows**: Navigate through playlists or channels
-- **OK/Select**: Play selected channel
-- **Back**: Return from fullscreen video to main menu
-- **Options**: Add new M3U playlist
+> **Tip:** Los canales son cíclicos - el último conecta con el primero
 
-### During Video Playback
+## 📺 Playlists Personalizadas
 
-- **← (Left Arrow)**: Show/hide channel overlay menu (video keeps playing!)
-  - Browse channels while watching
-  - Press OK to switch to another channel
-  - Press → or ← again to hide overlay
-- **Back**: Stop video and return to main menu
+Usa tu propia lista M3U o la URL de tu proveedor IPTV. Formatos soportados:
 
-### Features
+- URLs HTTP/HTTPS
+- Formato M3U con etiquetas EXTINF
+- Logos de canales (tvg-logo)
 
-1. **Category Filtering**: Select from the left sidebar
+**Playlists recomendadas:**
 
-   - 📺 All Channels
-   - 🎬 Movies
-   - 📺 Series
-   - ⚽ Sports
-   - 📰 News
-   - 🎵 Music
-   - ➕ Add New Playlist
+- [M3U.cl](https://m3u.cl/) - Listas por país
+- [IPTV-ORG](https://github.com/iptv-org/iptv) - Colección global (muy grande)
 
-2. **Multiple Playlists**:
+## 🔧 Solución de Problemas
 
-   - Add as many M3U lists as you want
-   - Switch between them from the sidebar
-   - Lists are saved automatically
+**La app se cierra al iniciar:**
 
-3. **Smart Search**: Categories auto-detect based on group-title in M3U
+- Verifica tu conexión a internet
+- Prueba con una playlist más pequeña primero
 
-## Custom Playlist
+**La playlist no carga:**
 
-You can use your own M3U playlist or your IPTV provider's URL. The app supports:
+- Verifica que la URL sea accesible desde un navegador
+- Asegúrate que el formato sea M3U válido
+- Intenta con la playlist demo por defecto
 
-- HTTP and HTTPS URLs
-- M3U format with EXTINF tags
-- Group categorization (group-title attribute)
-- Channel logos (tvg-logo attribute)
+**Debug:**
 
-### Test Playlist
-
-The included `test.m3u` file has only 5 channels for quick testing.
-The default `CO.m3u` contains Colombian TV channels and loads quickly.
-
-For other countries, you can find playlists at:
-
-- https://github.com/iptv-org/iptv (Warning: Very large, may cause loading issues)
-- https://m3u.cl/ (Regional playlists by country)
-
-## Troubleshooting
-
-### App crashes on startup
-
-1. Check your internet connection
-2. Try using a smaller playlist first (like `test.m3u`)
-3. Connect to telnet port 8085 on your Roku to see debug logs:
-   ```
-   telnet YOUR_ROKU_IP 8085
-   ```
-4. Look for error messages in the console
-
-### Playlist not loading
-
-- Verify the URL is accessible from a browser
-- Make sure the playlist is in M3U format
-- Check if the server supports HTTPS with valid certificates
-- Try the "Set back to Demo" button to use the default playlist
-
-## Version History
-
-### v2.0.0 (October 2025) 🎉
-
-- **NEW:** Multiple playlist management system
-- **NEW:** Side panel with playlist switcher
-- **NEW:** Clean text-based channel list (removed grid)
-- **NEW:** Simplified interface focused on functionality
-- **REMOVED:** Category filters (movies, series, etc.)
-- **CHANGED:** Renamed to MiroIPTV
-- Improved performance for large playlists
-- Better keyboard dialogs
-- Fullscreen video playback
-
-### v1.0.2 (October 2025)
-
-- Changed default playlist to CO.m3u (Colombian channels) for faster loading
-- Fixed crash on startup with invalid content
-- Improved error handling and null checks
-- Increased HTTP timeout to 60 seconds for large playlists
-- Added build script for easy packaging
-- Better validation in M3U parser
-- Replaced BusySpinner with simple loading text
-
-### v1.0.1 (2025)
-
-- Changed default playlist to IPTV-ORG collection
-- Added URL validation
-- Improved HTTP error handling with timeout
-- Added loading spinner
-- Enhanced M3U parser to extract channel logos
-- Better user feedback on errors
-
-### v1.0.0
-
-- Initial release
-- Basic M3U playlist support
-- Multiple video format support
+```bash
+telnet TU_IP_ROKU 8085
+```

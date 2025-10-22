@@ -30,6 +30,8 @@ sub init()
     
     ' Variables de estado
     m.allChannels = invalid
+    m.flatChannelList = [] ' Lista plana de todos los canales
+    m.currentChannelIndex = 0
     m.playlists = []
     m.currentPlaylist = 0
     m.isPlayingVideo = false
@@ -91,6 +93,18 @@ function onKeyEvent(key as String, press as Boolean) as Boolean
                 m.overlayVisible = false
                 m.video.SetFocus(true)
                 result = true
+            else if(key = "up")
+                ' Cambiar al canal anterior
+                if not m.overlayVisible then
+                    changeChannel(-1)
+                    result = true
+                end if
+            else if(key = "down")
+                ' Cambiar al canal siguiente
+                if not m.overlayVisible then
+                    changeChannel(1)
+                    result = true
+                end if
             end if
         else
             ' Navegación en el menú
@@ -295,6 +309,9 @@ sub SetContent()
         ' Guardar todos los canales
         m.allChannels = m.get_channel_list.content
         
+        ' Crear lista plana de canales para navegación con flechas
+        buildFlatChannelList()
+        
         ' Mostrar en lista simple (como antes)
         m.channelList.content = m.allChannels
         m.channelList.SetFocus(true)
@@ -304,6 +321,56 @@ sub SetContent()
         errorDialog.title = "Error"
         errorDialog.message = "No se pudo cargar la lista. Verifica la URL."
         m.top.dialog = errorDialog
+    end if
+end sub
+
+sub buildFlatChannelList()
+    ' Crear lista plana de todos los canales para navegación rápida
+    m.flatChannelList = []
+    
+    if m.allChannels = invalid then return
+    
+    for i = 0 to m.allChannels.getChildCount() - 1
+        section = m.allChannels.getChild(i)
+        if section = invalid then continue for
+        
+        if section.getChildCount() = 0 then
+            ' No hay grupos, es un canal directo
+            m.flatChannelList.Push(section)
+        else
+            ' Hay grupos, agregar todos los canales del grupo
+            for j = 0 to section.getChildCount() - 1
+                channel = section.getChild(j)
+                if channel <> invalid then
+                    m.flatChannelList.Push(channel)
+                end if
+            end for
+        end if
+    end for
+    
+    print "Total canales en lista plana: "; m.flatChannelList.Count()
+end sub
+
+sub changeChannel(direction as Integer)
+    ' Cambiar canal con flechas arriba/abajo
+    ' direction: -1 = anterior, 1 = siguiente
+    
+    if m.flatChannelList.Count() = 0 then return
+    
+    ' Calcular nuevo índice
+    m.currentChannelIndex = m.currentChannelIndex + direction
+    
+    ' Wrap around (circular)
+    if m.currentChannelIndex < 0 then
+        m.currentChannelIndex = m.flatChannelList.Count() - 1
+    else if m.currentChannelIndex >= m.flatChannelList.Count() then
+        m.currentChannelIndex = 0
+    end if
+    
+    ' Reproducir el nuevo canal
+    channel = m.flatChannelList[m.currentChannelIndex]
+    if channel <> invalid then
+        playChannel(channel)
     end if
 end sub
 
@@ -335,12 +402,21 @@ sub selectChannelFromList(list as Object)
     if firstChild.getChildCount() = 0 then
         ' No hay grupos, selección directa
         content = list.content.getChild(list.itemSelected)
+        m.currentChannelIndex = list.itemSelected
     else
         ' Hay grupos, calcular el item correcto
         itemSelected = list.itemSelected
+        channelIndex = 0
+        
+        ' Calcular índice en lista plana
         for i = 0 to list.currFocusSection - 1
+            channelIndex = channelIndex + list.content.getChild(i).getChildCount()
             itemSelected = itemSelected - list.content.getChild(i).getChildCount()
         end for
+        
+        channelIndex = channelIndex + itemSelected
+        m.currentChannelIndex = channelIndex
+        
         sectionContent = list.content.getChild(list.currFocusSection)
         if sectionContent = invalid then return
         content = sectionContent.getChild(itemSelected)
