@@ -2,8 +2,6 @@ sub init()
 	m.top.functionName = "getContent"
 end sub
 
-' **********************************************
-
 sub getContent()
 	feedurl = m.global.feedurl
 
@@ -19,9 +17,8 @@ sub getContent()
 		searchRequest.InitClientCertificates ()
 	end if
 
-	' Intentar obtener el contenido
 	if searchRequest.AsyncGetToString()
-		event = wait(60000, m.port) ' Timeout de 60 segundos (aumentado para listas grandes)
+		event = wait(60000, m.port)
 		if type(event) = "roUrlEvent"
 			responseCode = event.GetResponseCode()
 			if responseCode = 200
@@ -32,19 +29,16 @@ sub getContent()
 					return
 				end if
 			else
-				' Error HTTP
 				print "Error HTTP: "; responseCode
-				m.top.content = CreateObject("roSGNode", "ContentNode") ' Retornar contenido vacío
+				m.top.content = CreateObject("roSGNode", "ContentNode")
 				return
 			end if
 		else
-			' Timeout
 			print "Timeout al obtener el playlist"
 			m.top.content = CreateObject("roSGNode", "ContentNode")
 			return
 		end if
 	else
-		' Error al iniciar la petición
 		print "Error al iniciar la petición HTTP"
 		m.top.content = CreateObject("roSGNode", "ContentNode")
 		return
@@ -54,7 +48,6 @@ sub getContent()
 	hasGroups = reHasGroups.isMatch(text)
 	print hasGroups
 
-	' Regex para extraer tvg-logo
 	reTvgLogo = CreateObject("roRegex", "tvg-logo\=" + chr(34) + "([^" + chr(34) + "]*)" + chr(34), "i")
 
 	reLineSplit = CreateObject ("roRegex", "(?>\r\n|[\r\n])", "")
@@ -69,7 +62,6 @@ sub getContent()
 		groups = []
 	end if
 
-	REM #EXTINF:-1 tvg-logo="" group-title="uk",BBC ONE HD
 	logoUrl = ""
 	channelCount = 0
 	for each line in reLineSplit.Split (text)
@@ -79,12 +71,11 @@ sub getContent()
 				item = group.CreateChild("ContentNode")
 				item.url = maPath [1]
 				item.title = title
-				' Asignar logo si existe
 				if logoUrl <> "" and logoUrl <> invalid
 					item.HDPosterUrl = logoUrl
 					item.SDPosterUrl = logoUrl
 				end if
-				logoUrl = "" ' Reset para el siguiente item
+				logoUrl = ""
 				channelCount = channelCount + 1
 				inExtinf = False
 			end if
@@ -99,7 +90,6 @@ sub getContent()
 						groupName = "Other"
 					end if
 					group = invalid
-					REM Don't know why, but FindNode refused to work here
 					for x = 0 to con.getChildCount()-1
 						node = con.getChild(x)
 						if node.id = groupName
@@ -114,11 +104,9 @@ sub getContent()
 						group.id = groupName
 					end if
 				else
-					' Si no hay grupo, usar el grupo por defecto
 					if group = invalid then group = con
 				end if
 			end if
-			' Extraer tvg-logo si existe
 			maLogo = reTvgLogo.Match(line)
 			if maLogo.Count() = 2
 				logoUrl = maLogo[1]

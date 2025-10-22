@@ -1,11 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<!--********** Copyright 2016 Roku Corp.  All Rights Reserved. **********-->
-
 <component name="MainScene" extends="Scene" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://rokudev.roku.com/rokudev/schema/RokuSceneGraph.xsd">
 <script type="text/brightscript" uri="pkg:/components/MainScene/MainScene.brs"/>
 <children>
-    <!-- Panel lateral izquierdo con listas -->
     <Rectangle
         id="sidePanel"
         translation="[0, 0]"
@@ -30,7 +27,6 @@
             itemSpacing="[0, 10]"/>
     </Rectangle>
     
-    <!-- Lista simple de canales -->
     <LabelList
     	id="channelList"
     	translation="[370, 80]"
@@ -39,7 +35,6 @@
     	itemSpacing="[0, 5]"
     	visible="true"/>
     
-    <!-- Video player en pantalla completa -->
     <Video
         id="Video"
         translation="[0, 0]"
@@ -47,7 +42,6 @@
         height="1080"
         visible="false"/>
     
-    <!-- Overlay de canales (superpuesto sobre el video) -->
     <Rectangle
         id="channelOverlay"
         translation="[50, 100]"
@@ -72,7 +66,6 @@
             itemSpacing="[0, 5]"/>
     </Rectangle>
     
-    <!-- Loading indicator -->
     <Label
     	id="loadingSpinner"
     	translation="[860, 540]"
@@ -85,7 +78,6 @@
     	color="0xFFFFFFFF"
     	font="font:LargeBoldSystemFont"/>
     
-    <!-- Componentes de fondo -->
     <get_channel_list
     	id="get_channel_list"
     	control="STOP"/>

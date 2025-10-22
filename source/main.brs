@@ -1,12 +1,8 @@
-' ********** Copyright 2016 Roku Corp.  All Rights Reserved. ********** 
-
 sub Main()
-
     reg = CreateObject("roRegistrySection", "profile")
     if reg.Exists("primaryfeed") then
         url = reg.Read("primaryfeed")
     else
-        ' URL por defecto - Canales de Colombia
         url = "https://www.m3u.cl/lista/CO.m3u"
     end if
 
@@ -26,5 +22,4 @@ sub Main()
             if msg.isScreenClosed() then return
         end if
     end while
-    
 end sub
