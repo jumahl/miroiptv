@@ -41,6 +41,9 @@ sub init()
     else
         showPlaylistManager()
     end if
+    
+    ' Signal that the app launch is complete and UI is ready
+    m.top.signalBeacon("AppLaunchComplete")
 End sub
 
 function onKeyEvent(key as String, press as Boolean) as Boolean
@@ -305,7 +308,7 @@ sub editPlaylistName()
     
     playlist = m.playlists[m.selectedPlaylistIndex]
     
-    keyboard = createObject("roSGNode", "KeyboardDialog")
+    keyboard = createObject("roSGNode", "StandardKeyboardDialog")
     keyboard.backgroundUri = "pkg:/images/rsgde_bg_hd.jpg"
     keyboard.title = "EDITAR NOMBRE"
     keyboard.message = "Nuevo nombre para la lista"
@@ -341,7 +344,7 @@ sub editPlaylistUrl()
     
     playlist = m.playlists[m.selectedPlaylistIndex]
     
-    keyboard = createObject("roSGNode", "KeyboardDialog")
+    keyboard = createObject("roSGNode", "StandardKeyboardDialog")
     keyboard.backgroundUri = "pkg:/images/rsgde_bg_hd.jpg"
     keyboard.title = "EDITAR URL"
     keyboard.message = "Nueva URL de la lista M3U"
@@ -429,7 +432,7 @@ end sub
 sub showPlaylistManager()
     PRINT ">>> PLAYLIST MANAGER <<<"
 
-    keyboarddialog = createObject("roSGNode", "KeyboardDialog")
+    keyboarddialog = createObject("roSGNode", "StandardKeyboardDialog")
     keyboarddialog.backgroundUri = "pkg:/images/rsgde_bg_hd.jpg"
     keyboarddialog.title = "NUEVA LISTA - PASO 1/2"
     keyboarddialog.message = "Nombre de la lista (ej: Mi Canal)"
@@ -454,7 +457,7 @@ sub onPlaylistNameEntered()
         m.tempPlaylistName = name
         m.top.dialog.close = true
         
-        urlDialog = createObject("roSGNode", "KeyboardDialog")
+        urlDialog = createObject("roSGNode", "StandardKeyboardDialog")
         urlDialog.backgroundUri = "pkg:/images/rsgde_bg_hd.jpg"
         urlDialog.title = "NUEVA LISTA - PASO 2/2"
         urlDialog.message = "URL de la lista M3U"
