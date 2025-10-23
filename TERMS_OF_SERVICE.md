@@ -138,7 +138,7 @@ Estos Términos de Uso, junto con nuestra Política de Privacidad, constituyen e
 
 Para preguntas sobre estos Términos de Uso, contáctenos en:
 
-- Email: [tu-email@ejemplo.com]
+- Email: Jumahl@proton.me
 - GitHub: https://github.com/jumahl/SimpleIPTVRoku
 
 ---

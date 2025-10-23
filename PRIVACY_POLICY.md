@@ -67,7 +67,7 @@ Podemos actualizar nuestra Política de Privacidad ocasionalmente. Le notificare
 
 Si tiene preguntas sobre esta Política de Privacidad, puede contactarnos en:
 
-- Email: [tu-email@ejemplo.com]
+- Email: Jumahl@proton.me
 - GitHub: https://github.com/jumahl/SimpleIPTVRoku
 
 ---
