@@ -9,13 +9,16 @@ MiroIPTV ("nosotros", "nuestro" o "la aplicación") respeta su privacidad y se c
 ## 2. Información que Recopilamos
 
 ### 2.1 Información que usted proporciona
+
 - **URLs de listas M3U**: Las direcciones URL de las listas IPTV que usted agrega a la aplicación
 - **Nombres de listas**: Los nombres personalizados que usted asigna a sus listas de canales
 
 ### 2.2 Información almacenada localmente
+
 Toda la información mencionada anteriormente se almacena únicamente en su dispositivo Roku de manera local. **No recopilamos, transmitimos ni almacenamos esta información en servidores externos**.
 
 ### 2.3 Información que NO recopilamos
+
 - No recopilamos información personal identificable (nombre, dirección, correo electrónico, etc.)
 - No rastreamos su ubicación
 - No recopilamos datos de uso o análisis
@@ -25,6 +28,7 @@ Toda la información mencionada anteriormente se almacena únicamente en su disp
 ## 3. Cómo Usamos su Información
 
 La información almacenada localmente se utiliza únicamente para:
+
 - Guardar sus preferencias de listas de canales
 - Proporcionar acceso rápido a sus canales favoritos
 - Mejorar su experiencia de usuario dentro de la aplicación
@@ -32,6 +36,7 @@ La información almacenada localmente se utiliza únicamente para:
 ## 4. Compartir Información
 
 **No compartimos su información con terceros**. Toda la información permanece en su dispositivo Roku y nunca se transmite a servidores externos, excepto:
+
 - Las conexiones directas a las URLs de listas M3U que usted proporciona (para cargar el contenido de los canales)
 - Las transmisiones de video desde las fuentes IPTV que usted selecciona
 
@@ -50,6 +55,7 @@ Nuestra aplicación no está dirigida a niños menores de 13 años y no recopila
 ## 8. Sus Derechos
 
 Usted tiene derecho a:
+
 - Eliminar cualquier información almacenada desinstalando la aplicación
 - Modificar o eliminar listas de canales en cualquier momento desde la aplicación
 
@@ -60,6 +66,7 @@ Podemos actualizar nuestra Política de Privacidad ocasionalmente. Le notificare
 ## 10. Contacto
 
 Si tiene preguntas sobre esta Política de Privacidad, puede contactarnos en:
+
 - Email: [tu-email@ejemplo.com]
 - GitHub: https://github.com/jumahl/SimpleIPTVRoku
 
