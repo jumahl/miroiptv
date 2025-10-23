@@ -5,32 +5,32 @@
 <children>
     <Rectangle
         id="sidePanel"
-        translation="[0, 0]"
+        translation="[60, 60]"
         width="350"
-        height="1080"
+        height="960"
         color="0x000000DD"
         visible="true">
         
         <Label
             id="appTitle"
-            translation="[20, 30]"
+            translation="[30, 30]"
             text="MiroIPTV"
             font="font:LargeBoldSystemFont"
             color="0xFFFFFFFF"
-            width="310"/>
+            width="290"/>
             
         <LabelList
             id="playlistList"
-            translation="[20, 120]"
-            itemSize="[310, 60]"
-            numRows="12"
+            translation="[30, 120]"
+            itemSize="[290, 60]"
+            numRows="11"
             itemSpacing="[0, 10]"/>
     </Rectangle>
     
     <LabelList
     	id="channelList"
-    	translation="[370, 80]"
-    	itemSize="[1100, 50]"
+    	translation="[430, 120]"
+    	itemSize="[1400, 50]"
     	numRows="16"
     	itemSpacing="[0, 5]"
     	visible="true"/>
@@ -40,29 +40,45 @@
         translation="[0, 0]"
         width="1920"
         height="1080"
-        visible="false"/>
+        visible="false"
+        focusable="false"/>
     
     <Rectangle
         id="channelOverlay"
-        translation="[50, 100]"
-        width="500"
-        height="880"
-        color="0x000000DD"
+        translation="[100, 120]"
+        width="520"
+        height="840"
+        color="0x000000EE"
+        opacity="0.95"
         visible="false">
+        
+        <Rectangle
+            id="overlayBorder"
+            translation="[0, 0]"
+            width="520"
+            height="840"
+            color="0x00A0FF"
+            opacity="0.0">
+            <Rectangle
+                translation="[4, 4]"
+                width="512"
+                height="832"
+                color="0x000000"/>
+        </Rectangle>
         
         <Label
             id="overlayTitle"
-            translation="[20, 20]"
-            text="Canales"
-            font="font:MediumBoldSystemFont"
+            translation="[30, 30]"
+            text="📺 Canales"
+            font="font:LargeBoldSystemFont"
             color="0xFFFFFFFF"
             width="460"/>
         
         <LabelList
             id="channelOverlayList"
-            translation="[20, 80]"
+            translation="[30, 100]"
             itemSize="[460, 50]"
-            numRows="15"
+            numRows="13"
             itemSpacing="[0, 5]"/>
     </Rectangle>
     
