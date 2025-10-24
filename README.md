@@ -13,13 +13,7 @@ Reproductor IPTV moderno para Roku con interfaz limpia y navegación rápida.
 
 ## 📥 Instalación
 
-1. **Activa Developer Mode en tu Roku:**
-   - Presiona: Home 3x, Up 2x, Right, Left, Right, Left, Right
-
-
-3. **Instala en Roku:**
-   - Abre `http://TU_IP_ROKU` en tu navegador
-   - Sube el archivo `SimpleIPTVRoku.zip`
+https://my.roku.com/account/add?channel=DMQKLXP
 
 ## 🎮 Controles
 
