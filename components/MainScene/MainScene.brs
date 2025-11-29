@@ -18,6 +18,9 @@ sub init()
     m.channelOverlayList = m.top.FindNode("channelOverlayList")
     m.channelOverlayList.ObserveField("itemSelected", "onOverlayChannelSelected")
     
+    m.channelInfoOverlay = m.top.FindNode("channelInfoOverlay")
+    m.channelInfoLabel = m.top.FindNode("channelInfoLabel")
+    
     if m.loadingSpinner <> invalid then
         m.loadingSpinner.visible = false
     end if
@@ -92,8 +95,8 @@ function onKeyEvent(key as String, press as Boolean) as Boolean
                 m.overlayVisible = false
                 m.top.setFocus(true)
                 result = true
-            else if(key = "up")
-                print ">>> KEY UP presionado, overlayVisible = "; m.overlayVisible
+            else if(key = "up" or key = "fastforward" or key = "rewind")
+                print ">>> KEY UP/FF presionado, overlayVisible = "; m.overlayVisible
                 if not m.overlayVisible then
                     print ">>> KEY UP: Llamando changeChannel(-1)"
                     changeChannel(-1)
@@ -110,6 +113,9 @@ function onKeyEvent(key as String, press as Boolean) as Boolean
                 else
                     print ">>> KEY DOWN: Overlay visible, tecla pasará al overlay"
                 end if
+            else if(key = "OK" or key = "play")
+                ' Permitir que el video maneje play/pause
+                result = false
             end if
         else
             if(key = "right")
@@ -277,33 +283,64 @@ sub showPlaylistOptions()
         dialog.message = "Las listas predefinidas no se pueden editar o eliminar."
         dialog.buttons = ["OK"]
         m.top.dialog = dialog
+        m.top.dialog.observeField("buttonSelected", "onDefaultPlaylistDialogClosed")
         return
     end if
     
     dialog = CreateObject("roSGNode", "Dialog")
     dialog.title = "Opciones: " + selectedPlaylist.name
     dialog.buttons = ["Editar Nombre", "Editar URL", "Eliminar", "Cancelar"]
-    dialog.optionsDialog = true
     m.top.dialog = dialog
     m.selectedPlaylistIndex = selectedIdx
     
-    dialog.observeFieldScoped("buttonSelected", "onPlaylistOptionSelected")
+    m.top.dialog.observeField("buttonSelected", "onPlaylistOptionSelected")
+end sub
+
+sub onDefaultPlaylistDialogClosed()
+    m.top.dialog.unobserveField("buttonSelected")
+    m.top.dialog.close = true
+    m.playlistList.setFocus(true)
 end sub
 
 sub onPlaylistOptionSelected()
     buttonIdx = m.top.dialog.buttonSelected
+    
+    m.top.dialog.unobserveField("buttonSelected")
     m.top.dialog.close = true
     
     if buttonIdx = 0 then
-        editPlaylistName()
+        ' Usar timer para esperar que el diálogo se cierre
+        m.optionTimer = CreateObject("roSGNode", "Timer")
+        m.optionTimer.duration = 0.2
+        m.optionTimer.repeat = false
+        m.optionTimer.observeField("fire", "editPlaylistName")
+        m.optionTimer.control = "start"
     else if buttonIdx = 1 then
-        editPlaylistUrl()
+        m.optionTimer = CreateObject("roSGNode", "Timer")
+        m.optionTimer.duration = 0.2
+        m.optionTimer.repeat = false
+        m.optionTimer.observeField("fire", "editPlaylistUrl")
+        m.optionTimer.control = "start"
     else if buttonIdx = 2 then
-        confirmDeletePlaylist()
+        m.optionTimer = CreateObject("roSGNode", "Timer")
+        m.optionTimer.duration = 0.2
+        m.optionTimer.repeat = false
+        m.optionTimer.observeField("fire", "confirmDeletePlaylist")
+        m.optionTimer.control = "start"
+    else
+        m.playlistList.setFocus(true)
     end if
 end sub
 
 sub editPlaylistName()
+    print ">>> EDIT NAME: Iniciando"
+    
+    ' Limpiar timer si existe
+    if m.optionTimer <> invalid then
+        m.optionTimer.unobserveField("fire")
+        m.optionTimer = invalid
+    end if
+    
     if m.selectedPlaylistIndex = invalid then return
     
     playlist = m.playlists[m.selectedPlaylistIndex]
@@ -316,12 +353,21 @@ sub editPlaylistName()
     keyboard.buttons = ["Guardar", "Cancelar"]
     
     m.top.dialog = keyboard
-    keyboard.observeFieldScoped("buttonSelected", "onEditNameComplete")
+    m.top.dialog.observeField("buttonSelected", "onEditNameComplete")
 end sub
 
 sub onEditNameComplete()
-    if m.top.dialog.buttonSelected = 0 then
+    print ">>> EDIT NAME: buttonSelected = "; m.top.dialog.buttonSelected
+    
+    buttonSelected = m.top.dialog.buttonSelected
+    
+    if buttonSelected = 0 then
         newName = m.top.dialog.text
+        
+        ' Desregistrar y cerrar el diálogo
+        m.top.dialog.unobserveField("buttonSelected")
+        m.top.dialog.close = true
+        
         if newName <> "" and newName <> invalid then
             playlist = m.playlists[m.selectedPlaylistIndex]
             playlist.name = newName
@@ -335,11 +381,23 @@ sub onEditNameComplete()
             
             setupPlaylistMenu()
         end if
+    else
+        m.top.dialog.unobserveField("buttonSelected")
+        m.top.dialog.close = true
     end if
-    m.top.dialog.close = true
+    
+    m.playlistList.setFocus(true)
 end sub
 
 sub editPlaylistUrl()
+    print ">>> EDIT URL: Iniciando"
+    
+    ' Limpiar timer si existe
+    if m.optionTimer <> invalid then
+        m.optionTimer.unobserveField("fire")
+        m.optionTimer = invalid
+    end if
+    
     if m.selectedPlaylistIndex = invalid then return
     
     playlist = m.playlists[m.selectedPlaylistIndex]
@@ -350,15 +408,23 @@ sub editPlaylistUrl()
     keyboard.message = "Nueva URL de la lista M3U"
     keyboard.text = playlist.url
     keyboard.buttons = ["Guardar", "Cancelar"]
-    keyboard.keyboard.textEditBox.maxTextLength = 300
     
     m.top.dialog = keyboard
-    keyboard.observeFieldScoped("buttonSelected", "onEditUrlComplete")
+    m.top.dialog.observeField("buttonSelected", "onEditUrlComplete")
 end sub
 
 sub onEditUrlComplete()
-    if m.top.dialog.buttonSelected = 0 then
+    print ">>> EDIT URL: buttonSelected = "; m.top.dialog.buttonSelected
+    
+    buttonSelected = m.top.dialog.buttonSelected
+    
+    if buttonSelected = 0 then
         newUrl = m.top.dialog.text
+        
+        ' Desregistrar y cerrar el diálogo primero
+        m.top.dialog.unobserveField("buttonSelected")
+        m.top.dialog.close = true
+        
         if isValidUrl(newUrl) then
             playlist = m.playlists[m.selectedPlaylistIndex]
             playlist.url = newUrl
@@ -372,19 +438,53 @@ sub onEditUrlComplete()
             
             loadPlaylist(newUrl)
         else
-            errorDialog = CreateObject("roSGNode", "Dialog")
-            errorDialog.title = "Error"
-            errorDialog.message = "URL inválida. Debe empezar con http:// o https://"
-            errorDialog.buttons = ["OK"]
-            m.top.dialog.close = true
-            m.top.dialog = errorDialog
-            return
+            ' Mostrar error
+            m.pendingErrorMessage = "URL inválida. Debe empezar con http:// o https://"
+            m.editUrlErrorTimer = CreateObject("roSGNode", "Timer")
+            m.editUrlErrorTimer.duration = 0.3
+            m.editUrlErrorTimer.repeat = false
+            m.editUrlErrorTimer.observeField("fire", "showEditUrlError")
+            m.editUrlErrorTimer.control = "start"
         end if
+    else
+        m.top.dialog.unobserveField("buttonSelected")
+        m.top.dialog.close = true
+        m.playlistList.setFocus(true)
     end if
+end sub
+
+sub showEditUrlError()
+    print ">>> EDIT URL ERROR: Mostrando diálogo de error"
+    
+    if m.editUrlErrorTimer <> invalid then
+        m.editUrlErrorTimer.unobserveField("fire")
+        m.editUrlErrorTimer = invalid
+    end if
+    
+    errorDialog = CreateObject("roSGNode", "Dialog")
+    errorDialog.title = "Error"
+    errorDialog.message = "URL inválida. Debe empezar con http:// o https://"
+    errorDialog.buttons = ["OK"]
+    
+    m.top.dialog = errorDialog
+    m.top.dialog.observeField("buttonSelected", "onEditUrlErrorClosed")
+end sub
+
+sub onEditUrlErrorClosed()
+    m.top.dialog.unobserveField("buttonSelected")
     m.top.dialog.close = true
+    m.playlistList.setFocus(true)
 end sub
 
 sub confirmDeletePlaylist()
+    print ">>> DELETE: Mostrando confirmación"
+    
+    ' Limpiar timer si existe
+    if m.optionTimer <> invalid then
+        m.optionTimer.unobserveField("fire")
+        m.optionTimer = invalid
+    end if
+    
     if m.selectedPlaylistIndex = invalid then return
     
     playlist = m.playlists[m.selectedPlaylistIndex]
@@ -393,14 +493,20 @@ sub confirmDeletePlaylist()
     dialog.title = "Confirmar eliminación"
     dialog.message = "¿Eliminar '" + playlist.name + "'?"
     dialog.buttons = ["Eliminar", "Cancelar"]
-    dialog.optionsDialog = true
     
     m.top.dialog = dialog
-    dialog.observeFieldScoped("buttonSelected", "onDeleteConfirmed")
+    m.top.dialog.observeField("buttonSelected", "onDeleteConfirmed")
 end sub
 
 sub onDeleteConfirmed()
-    if m.top.dialog.buttonSelected = 0 then
+    print ">>> DELETE: buttonSelected = "; m.top.dialog.buttonSelected
+    
+    buttonSelected = m.top.dialog.buttonSelected
+    
+    m.top.dialog.unobserveField("buttonSelected")
+    m.top.dialog.close = true
+    
+    if buttonSelected = 0 then
         regIndex = m.selectedPlaylistIndex - 6
         
         m.playlists.Delete(m.selectedPlaylistIndex)
@@ -426,81 +532,228 @@ sub onDeleteConfirmed()
             loadPlaylist(m.playlists[0].url)
         end if
     end if
-    m.top.dialog.close = true
+    
+    m.playlistList.setFocus(true)
 end sub
 
 sub showPlaylistManager()
-    PRINT ">>> PLAYLIST MANAGER <<<"
-
-    keyboarddialog = createObject("roSGNode", "StandardKeyboardDialog")
-    keyboarddialog.backgroundUri = "pkg:/images/rsgde_bg_hd.jpg"
-    keyboarddialog.title = "NUEVA LISTA - PASO 1/2"
-    keyboarddialog.message = "Nombre de la lista (ej: Mi Canal)"
-
-    keyboarddialog.buttons=["Siguiente","Cancelar"]
-    keyboarddialog.optionsDialog=true
-
-    m.top.dialog = keyboarddialog
-    m.top.dialog.text = ""
-    m.top.dialog.keyboard.textEditBox.maxTextLength = 50
-
-    keyboarddialog.observeFieldScoped("buttonSelected","onPlaylistNameEntered")
+    print ">>> PLAYLIST MANAGER: Iniciando paso 1 - Nombre <<<"
+    
+    ' Limpiar cualquier diálogo anterior
+    if m.top.dialog <> invalid then
+        m.top.dialog.close = true
+        m.top.dialog = invalid
+    end if
+    
+    ' Limpiar timers anteriores
+    if m.urlDialogTimer <> invalid then
+        m.urlDialogTimer.control = "stop"
+        m.urlDialogTimer = invalid
+    end if
+    
+    m.tempPlaylistName = invalid
+    
+    keyboardDialog = createObject("roSGNode", "StandardKeyboardDialog")
+    keyboardDialog.backgroundUri = "pkg:/images/rsgde_bg_hd.jpg"
+    keyboardDialog.title = "NUEVA LISTA - PASO 1/2"
+    keyboardDialog.message = "Nombre de la lista (ej: Mi Canal)"
+    keyboardDialog.buttons = ["Siguiente", "Cancelar"]
+    keyboardDialog.text = ""
+    
+    m.top.dialog = keyboardDialog
+    m.top.dialog.observeField("buttonSelected", "onPlaylistNameEntered")
+    
+    print ">>> PLAYLIST MANAGER: Diálogo de nombre mostrado"
 end sub
 
 sub onPlaylistNameEntered()
-    if m.top.dialog.buttonSelected = 0 then
+    print ">>> PLAYLIST NAME: buttonSelected = "; m.top.dialog.buttonSelected
+    
+    buttonSelected = m.top.dialog.buttonSelected
+    
+    if buttonSelected = 0 then
+        ' Botón "Siguiente" presionado
         name = m.top.dialog.text
         if name = "" or name = invalid then
             name = "Mi Lista"
         end if
         
         m.tempPlaylistName = name
+        print ">>> PLAYLIST NAME: Nombre guardado = "; m.tempPlaylistName
+        
+        ' Cerrar diálogo actual
+        m.top.dialog.unobserveField("buttonSelected")
         m.top.dialog.close = true
         
-        urlDialog = createObject("roSGNode", "StandardKeyboardDialog")
-        urlDialog.backgroundUri = "pkg:/images/rsgde_bg_hd.jpg"
-        urlDialog.title = "NUEVA LISTA - PASO 2/2"
-        urlDialog.message = "URL de la lista M3U"
-        urlDialog.buttons=["Agregar","Cancelar"]
-        urlDialog.keyboard.textEditBox.maxTextLength = 300
-        
-        m.top.dialog = urlDialog
-        urlDialog.observeFieldScoped("buttonSelected","onPlaylistUrlEntered")
+        ' Esperar un momento antes de mostrar el siguiente diálogo
+        m.urlDialogTimer = CreateObject("roSGNode", "Timer")
+        m.urlDialogTimer.duration = 0.3
+        m.urlDialogTimer.repeat = false
+        m.urlDialogTimer.observeField("fire", "showUrlDialog")
+        m.urlDialogTimer.control = "start"
     else
+        ' Botón "Cancelar" presionado
+        print ">>> PLAYLIST NAME: Cancelado"
+        m.top.dialog.unobserveField("buttonSelected")
         m.top.dialog.close = true
+        m.tempPlaylistName = invalid
+        
+        ' Devolver el foco a la lista
+        m.playlistList.setFocus(true)
     end if
 end sub
 
+sub showUrlDialog()
+    print ">>> URL DIALOG: Iniciando paso 2 - URL <<<"
+    
+    ' Limpiar timer
+    if m.urlDialogTimer <> invalid then
+        m.urlDialogTimer.unobserveField("fire")
+        m.urlDialogTimer = invalid
+    end if
+    
+    ' Verificar que tenemos el nombre
+    if m.tempPlaylistName = invalid then
+        print ">>> URL DIALOG ERROR: No hay nombre guardado"
+        m.playlistList.setFocus(true)
+        return
+    end if
+    
+    urlDialog = createObject("roSGNode", "StandardKeyboardDialog")
+    urlDialog.backgroundUri = "pkg:/images/rsgde_bg_hd.jpg"
+    urlDialog.title = "NUEVA LISTA - PASO 2/2"
+    urlDialog.message = "URL de la lista M3U (ej: https://ejemplo.com/lista.m3u)"
+    urlDialog.buttons = ["Agregar", "Cancelar"]
+    urlDialog.text = ""
+    
+    m.top.dialog = urlDialog
+    m.top.dialog.observeField("buttonSelected", "onPlaylistUrlEntered")
+    
+    print ">>> URL DIALOG: Diálogo de URL mostrado"
+end sub
+
 sub onPlaylistUrlEntered()
-    if m.top.dialog.buttonSelected = 0 then
+    print ">>> PLAYLIST URL: buttonSelected = "; m.top.dialog.buttonSelected
+    
+    buttonSelected = m.top.dialog.buttonSelected
+    
+    if buttonSelected = 0 then
+        ' Botón "Agregar" presionado
         url = m.top.dialog.text
-        if not isValidUrl(url) then
-            errorDialog = CreateObject("roSGNode", "Dialog")
-            errorDialog.title = "Error"
-            errorDialog.message = "URL inválida. Debe empezar con http:// o https://"
-            m.top.dialog.close = true
-            m.top.dialog = errorDialog
+        print ">>> PLAYLIST URL: URL ingresada = "; url
+        
+        ' Desregistrar observer y cerrar diálogo
+        m.top.dialog.unobserveField("buttonSelected")
+        m.top.dialog.close = true
+        
+        ' Validar URL
+        if url = "" or url = invalid then
+            print ">>> PLAYLIST URL ERROR: URL vacía"
+            showUrlErrorMessage("La URL no puede estar vacía")
             return
         end if
         
+        if not isValidUrl(url) then
+            print ">>> PLAYLIST URL ERROR: URL inválida"
+            showUrlErrorMessage("URL inválida. Debe empezar con http:// o https://")
+            return
+        end if
+        
+        ' Guardar y cargar la playlist
         if m.tempPlaylistName <> invalid then
+            print ">>> PLAYLIST URL: Guardando playlist - Nombre: "; m.tempPlaylistName; ", URL: "; url
             savePlaylist(m.tempPlaylistName, url)
             loadPlaylist(url)
         end if
         
-        m.top.dialog.close = true
+        m.tempPlaylistName = invalid
+        m.playlistList.setFocus(true)
     else
+        ' Botón "Cancelar" presionado
+        print ">>> PLAYLIST URL: Cancelado"
+        m.top.dialog.unobserveField("buttonSelected")
         m.top.dialog.close = true
+        m.tempPlaylistName = invalid
+        m.playlistList.setFocus(true)
     end if
+end sub
+
+sub showUrlErrorMessage(message as String)
+    print ">>> URL ERROR: Mostrando mensaje de error"
+    
+    ' Usar timer para mostrar el error
+    m.pendingErrorMessage = message
+    m.errorTimer = CreateObject("roSGNode", "Timer")
+    m.errorTimer.duration = 0.3
+    m.errorTimer.repeat = false
+    m.errorTimer.observeField("fire", "showUrlError")
+    m.errorTimer.control = "start"
+end sub
+
+sub showUrlError()
+    print ">>> URL ERROR: Timer disparado, mostrando diálogo"
+    
+    if m.errorTimer <> invalid then
+        m.errorTimer.unobserveField("fire")
+        m.errorTimer = invalid
+    end if
+    
+    message = "URL inválida. Debe empezar con http:// o https://"
+    if m.pendingErrorMessage <> invalid then
+        message = m.pendingErrorMessage
+        m.pendingErrorMessage = invalid
+    end if
+    
+    errorDialog = CreateObject("roSGNode", "Dialog")
+    errorDialog.title = "Error"
+    errorDialog.message = message
+    errorDialog.buttons = ["OK"]
+    
+    m.top.dialog = errorDialog
+    m.top.dialog.observeField("buttonSelected", "onErrorDialogClosed")
+end sub
+
+sub onErrorDialogClosed()
+    print ">>> ERROR DIALOG: Cerrado"
+    m.top.dialog.unobserveField("buttonSelected")
+    m.top.dialog.close = true
+    m.playlistList.setFocus(true)
 end sub
 
 sub checkState()
     state = m.video.state
     if(state = "error")
-        m.top.dialog = CreateObject("roSGNode", "Dialog")
-        m.top.dialog.title = "Error: " + str(m.video.errorCode)
-        m.top.dialog.message = m.video.errorMsg
+        ' Mostrar error en el overlay de información en lugar de un diálogo bloqueante
+        showChannelError(m.video.errorMsg)
     end if
+end sub
+
+sub showChannelError(errorMsg as String)
+    if m.channelInfoOverlay = invalid or m.channelInfoLabel = invalid then return
+    
+    channelNumber = (m.currentChannelIndex + 1).ToStr()
+    totalChannels = m.flatChannelList.Count().ToStr()
+    
+    channel = m.flatChannelList[m.currentChannelIndex]
+    channelName = "Canal"
+    if channel <> invalid and channel.title <> invalid then
+        channelName = channel.title
+    end if
+    
+    m.channelInfoLabel.text = channelNumber + "/" + totalChannels + " - " + channelName + chr(10) + "⚠️ Error: Canal no disponible"
+    
+    m.channelInfoOverlay.visible = true
+    
+    ' Crear timer para ocultar el overlay después de 4 segundos
+    if m.channelInfoTimer <> invalid then
+        m.channelInfoTimer.control = "stop"
+    end if
+    
+    m.channelInfoTimer = CreateObject("roSGNode", "Timer")
+    m.channelInfoTimer.duration = 4
+    m.channelInfoTimer.repeat = false
+    m.channelInfoTimer.ObserveField("fire", "hideChannelInfo")
+    m.channelInfoTimer.control = "start"
 end sub
 
 sub SetContent()
@@ -574,9 +827,37 @@ sub changeChannel(direction as Integer)
     channel = m.flatChannelList[m.currentChannelIndex]
     if channel <> invalid then
         print ">>> CHANGECHANNEL: Reproduciendo canal: "; channel.title
+        showChannelInfo(channel)
         playChannel(channel)
     else
         print ">>> CHANGECHANNEL ERROR: Canal es invalid en índice "; m.currentChannelIndex
+    end if
+end sub
+
+sub showChannelInfo(channel as Object)
+    if m.channelInfoOverlay = invalid or m.channelInfoLabel = invalid then return
+    
+    channelNumber = (m.currentChannelIndex + 1).ToStr()
+    totalChannels = m.flatChannelList.Count().ToStr()
+    m.channelInfoLabel.text = channelNumber + "/" + totalChannels + " - " + channel.title
+    
+    m.channelInfoOverlay.visible = true
+    
+    ' Crear timer para ocultar el overlay después de 3 segundos
+    if m.channelInfoTimer <> invalid then
+        m.channelInfoTimer.control = "stop"
+    end if
+    
+    m.channelInfoTimer = CreateObject("roSGNode", "Timer")
+    m.channelInfoTimer.duration = 3
+    m.channelInfoTimer.repeat = false
+    m.channelInfoTimer.ObserveField("fire", "hideChannelInfo")
+    m.channelInfoTimer.control = "start"
+end sub
+
+sub hideChannelInfo()
+    if m.channelInfoOverlay <> invalid then
+        m.channelInfoOverlay.visible = false
     end if
 end sub
 
@@ -690,6 +971,11 @@ sub playChannel(content as Object)
 	m.isPlayingVideo = true
 	
 	m.video.control = "play"
+	
+	' Asegurar que el Scene tiene el foco para recibir eventos de teclado
+	m.video.setFocus(false)
+	m.channelList.setFocus(false)
+	m.playlistList.setFocus(false)
 	m.top.setFocus(true)
 	
 	print ">>> PLAY: Video iniciado, control = play"

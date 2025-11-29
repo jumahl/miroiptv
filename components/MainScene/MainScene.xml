@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<component name="MainScene" extends="Scene" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://rokudev.roku.com/rokudev/schema/RokuSceneGraph.xsd">
+<component name="MainScene" extends="Scene" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://rokudev.roku.com/rokudev/schema/RokuSceneGraph.xsd" initialFocus="playlistList">
 <script type="text/brightscript" uri="pkg:/components/MainScene/MainScene.brs"/>
 <children>
     <Rectangle
@@ -42,6 +42,26 @@
         height="1080"
         visible="false"
         focusable="false"/>
+    
+    <Rectangle
+        id="channelInfoOverlay"
+        translation="[60, 880]"
+        width="700"
+        height="140"
+        color="0x000000CC"
+        visible="false">
+        
+        <Label
+            id="channelInfoLabel"
+            translation="[20, 15]"
+            text=""
+            font="font:MediumBoldSystemFont"
+            color="0xFFFFFFFF"
+            width="660"
+            height="110"
+            wrap="true"
+            maxLines="3"/>
+    </Rectangle>
     
     <Rectangle
         id="channelOverlay"
