@@ -1,6 +1,6 @@
 # Política de Privacidad de MiroIPTV
 
-**Última actualización:** 23 de octubre de 2025
+**Última actualización:** 29 de noviembre de 2025
 
 ## 1. Introducción
 
@@ -17,7 +17,15 @@ MiroIPTV ("nosotros", "nuestro" o "la aplicación") respeta su privacidad y se c
 
 Toda la información mencionada anteriormente se almacena únicamente en su dispositivo Roku de manera local. **No recopilamos, transmitimos ni almacenamos esta información en servidores externos**.
 
-### 2.3 Información que NO recopilamos
+### 2.3 Preferencias de reproducción
+
+La aplicación puede almacenar localmente:
+
+- Preferencias de pistas de audio seleccionadas
+- Preferencias de subtítulos
+- Último canal visualizado
+
+### 2.4 Información que NO recopilamos
 
 - No recopilamos información personal identificable (nombre, dirección, correo electrónico, etc.)
 - No rastreamos su ubicación

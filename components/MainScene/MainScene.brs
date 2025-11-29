@@ -10,6 +10,7 @@ sub init()
     
     m.channelList = m.top.FindNode("channelList")
     m.channelList.ObserveField("itemSelected", "onChannelSelected")
+    m.channelList.ObserveField("itemFocused", "onChannelFocused")
     
     m.sidePanel = m.top.FindNode("sidePanel")
     m.loadingSpinner = m.top.FindNode("loadingSpinner")
@@ -21,6 +22,17 @@ sub init()
     m.channelInfoOverlay = m.top.FindNode("channelInfoOverlay")
     m.channelInfoLabel = m.top.FindNode("channelInfoLabel")
     
+    ' Vista previa del video
+    m.previewContainer = m.top.FindNode("previewContainer")
+    m.previewVideo = m.top.FindNode("PreviewVideo")
+    m.previewChannelName = m.top.FindNode("previewChannelName")
+    
+    if m.previewVideo <> invalid then
+        m.previewVideo.EnableCookies()
+        m.previewVideo.SetCertificatesFile("common:/certs/ca-bundle.crt")
+        m.previewVideo.InitClientCertificates()
+    end if
+    
     if m.loadingSpinner <> invalid then
         m.loadingSpinner.visible = false
     end if
@@ -31,10 +43,12 @@ sub init()
     m.allChannels = invalid
     m.flatChannelList = []
     m.currentChannelIndex = 0
+    m.previewChannelIndex = -1
     m.playlists = []
     m.currentPlaylist = 0
     m.isPlayingVideo = false
     m.overlayVisible = false
+    m.lastFocusedChannel = -1
     
     loadSavedPlaylists()
     setupPlaylistMenu()
@@ -61,10 +75,16 @@ function onKeyEvent(key as String, press as Boolean) as Boolean
                 m.channelOverlay.visible = false
                 m.channelList.visible = true
                 m.sidePanel.visible = true
+                m.previewContainer.visible = true
                 m.isPlayingVideo = false
                 m.overlayVisible = false
                 m.channelList.SetFocus(true)
                 m.top.backgroundURI = "pkg:/images/background-controls.jpg"
+                
+                ' Reanudar vista previa si hay canal enfocado
+                if m.lastFocusedChannel >= 0 then
+                    playPreviewChannel(m.lastFocusedChannel)
+                end if
                 result = true
             else if(key = "left")
                 print ">>> OVERLAY: Flecha izquierda presionada"
@@ -95,8 +115,8 @@ function onKeyEvent(key as String, press as Boolean) as Boolean
                 m.overlayVisible = false
                 m.top.setFocus(true)
                 result = true
-            else if(key = "up" or key = "fastforward" or key = "rewind")
-                print ">>> KEY UP/FF presionado, overlayVisible = "; m.overlayVisible
+            else if(key = "up" or key = "rewind")
+                print ">>> KEY UP/RW presionado, overlayVisible = "; m.overlayVisible
                 if not m.overlayVisible then
                     print ">>> KEY UP: Llamando changeChannel(-1)"
                     changeChannel(-1)
@@ -104,8 +124,8 @@ function onKeyEvent(key as String, press as Boolean) as Boolean
                 else
                     print ">>> KEY UP: Overlay visible, tecla pasará al overlay"
                 end if
-            else if(key = "down")
-                print ">>> KEY DOWN presionado, overlayVisible = "; m.overlayVisible
+            else if(key = "down" or key = "fastforward")
+                print ">>> KEY DOWN/FF presionado, overlayVisible = "; m.overlayVisible
                 if not m.overlayVisible then
                     print ">>> KEY DOWN: Llamando changeChannel(1)"
                     changeChannel(1)
@@ -113,9 +133,20 @@ function onKeyEvent(key as String, press as Boolean) as Boolean
                 else
                     print ">>> KEY DOWN: Overlay visible, tecla pasará al overlay"
                 end if
-            else if(key = "OK" or key = "play")
-                ' Permitir que el video maneje play/pause
-                result = false
+            else if(key = "OK")
+                ' Mostrar menú de opciones solo si el video ya está reproduciéndose
+                if m.video.state = "playing" or m.video.state = "paused" or m.video.state = "buffering" then
+                    showVideoOptionsMenu()
+                    result = true
+                end if
+            else if(key = "play")
+                ' Play/Pause del video
+                if m.video.state = "playing" then
+                    m.video.control = "pause"
+                else
+                    m.video.control = "resume"
+                end if
+                result = true
             end if
         else
             if(key = "right")
@@ -861,6 +892,461 @@ sub hideChannelInfo()
     end if
 end sub
 
+' ==================== MENÚ DE OPCIONES DE VIDEO ====================
+
+sub showVideoOptionsMenu()
+    print ">>> VIDEO OPTIONS: Mostrando menú de opciones"
+    
+    dialog = CreateObject("roSGNode", "Dialog")
+    dialog.title = "⚙️ Opciones de Reproducción"
+    dialog.buttons = ["🔊 Cambiar Audio", "💬 Subtítulos", "ℹ️ Info del Canal", "❌ Cerrar"]
+    
+    m.top.dialog = dialog
+    m.top.dialog.observeField("buttonSelected", "onVideoOptionSelected")
+end sub
+
+sub onVideoOptionSelected()
+    buttonIdx = m.top.dialog.buttonSelected
+    
+    m.top.dialog.unobserveField("buttonSelected")
+    m.top.dialog.close = true
+    
+    if buttonIdx = 0 then
+        ' Cambiar pista de audio
+        showAudioTracksMenu()
+    else if buttonIdx = 1 then
+        ' Subtítulos
+        showSubtitlesMenu()
+    else if buttonIdx = 2 then
+        ' Info del canal
+        showCurrentChannelInfo()
+    end if
+    
+    m.top.setFocus(true)
+end sub
+
+sub showAudioTracksMenu()
+    print ">>> AUDIO TRACKS: Obteniendo pistas de audio"
+    
+    if m.video = invalid then return
+    
+    ' Obtener información de las pistas de audio disponibles
+    ' Intentar múltiples propiedades para compatibilidad
+    audioTracks = m.video.audioTracks
+    
+    print ">>> AUDIO: audioTracks = "; audioTracks
+    
+    if audioTracks = invalid or audioTracks.Count() = 0 then
+        ' Intentar con availableAudioTracks
+        audioTracks = m.video.availableAudioTracks
+        print ">>> AUDIO: availableAudioTracks = "; audioTracks
+    end if
+    
+    ' Debug: mostrar información del stream
+    print ">>> AUDIO: streamInfo = "; m.video.streamInfo
+    print ">>> AUDIO: audioFormat = "; m.video.audioFormat
+    
+    if audioTracks = invalid or audioTracks.Count() = 0 then
+        ' Mostrar información de debug
+        message = "No se detectaron pistas de audio adicionales." + chr(10) + chr(10)
+        message = message + "Formato de audio: " + toStr(m.video.audioFormat) + chr(10)
+        message = message + "Estado del video: " + m.video.state
+        
+        dialog = CreateObject("roSGNode", "Dialog")
+        dialog.title = "🔊 Pistas de Audio"
+        dialog.message = message
+        dialog.buttons = ["OK"]
+        m.top.dialog = dialog
+        m.top.dialog.observeField("buttonSelected", "onSimpleDialogClosed")
+        return
+    end if
+    
+    ' Crear lista de pistas de audio
+    m.audioTracksList = []
+    buttons = []
+    
+    ' Obtener pista actual
+    currentTrackIndex = -1
+    if m.video.currentAudioTrack <> invalid then
+        currentTrackIndex = m.video.currentAudioTrack
+    end if
+    
+    for i = 0 to audioTracks.Count() - 1
+        track = audioTracks[i]
+        trackName = ""
+        
+        print ">>> AUDIO TRACK "; i; ": "; track
+        
+        ' Construir nombre de la pista - revisar diferentes propiedades
+        language = ""
+        if type(track) = "roAssociativeArray" then
+            if track.Language <> invalid and track.Language <> "" then
+                language = track.Language
+            else if track.language <> invalid and track.language <> "" then
+                language = track.language
+            end if
+            
+            if language <> "" then
+                trackName = getLanguageName(language)
+            else
+                trackName = "Pista " + (i + 1).ToStr()
+            end if
+            
+            ' Añadir nombre si existe
+            if track.Name <> invalid and track.Name <> "" then
+                trackName = trackName + " (" + track.Name + ")"
+            else if track.name <> invalid and track.name <> "" then
+                trackName = trackName + " (" + track.name + ")"
+            end if
+        else if type(track) = "String" or type(track) = "roString" then
+            trackName = getLanguageName(track)
+        else
+            trackName = "Pista " + (i + 1).ToStr()
+        end if
+        
+        ' Marcar la pista actual
+        if i = currentTrackIndex then
+            trackName = "✓ " + trackName
+        end if
+        
+        buttons.Push(trackName)
+        m.audioTracksList.Push(i)
+    end for
+    
+    buttons.Push("❌ Cancelar")
+    
+    dialog = CreateObject("roSGNode", "Dialog")
+    dialog.title = "🔊 Seleccionar Pista de Audio (" + audioTracks.Count().ToStr() + " disponibles)"
+    dialog.buttons = buttons
+    
+    m.top.dialog = dialog
+    m.top.dialog.observeField("buttonSelected", "onAudioTrackSelected")
+end sub
+
+function toStr(value as Dynamic) as String
+    if value = invalid then return "N/A"
+    if type(value) = "String" or type(value) = "roString" then return value
+    if type(value) = "Integer" or type(value) = "roInt" then return value.ToStr()
+    if type(value) = "Float" or type(value) = "roFloat" then return Str(value)
+    return type(value)
+end function
+
+sub onAudioTrackSelected()
+    buttonIdx = m.top.dialog.buttonSelected
+    
+    m.top.dialog.unobserveField("buttonSelected")
+    m.top.dialog.close = true
+    
+    if m.audioTracksList <> invalid and buttonIdx < m.audioTracksList.Count() then
+        trackIndex = m.audioTracksList[buttonIdx]
+        print ">>> AUDIO: Cambiando a pista "; trackIndex
+        
+        ' Intentar cambiar la pista de audio usando diferentes métodos
+        ' Método 1: audioTrack (índice directo)
+        m.video.audioTrack = trackIndex
+        
+        ' Método 2: selectAudioTrack
+        m.video.selectAudioTrack = trackIndex
+        
+        ' Mostrar confirmación
+        showChannelInfoMessage("🔊 Audio: Pista " + (trackIndex + 1).ToStr() + " seleccionada")
+    end if
+    
+    m.top.setFocus(true)
+end sub
+
+sub showSubtitlesMenu()
+    print ">>> SUBTITLES: Obteniendo subtítulos"
+    
+    if m.video = invalid then return
+    
+    ' Obtener información de las pistas de subtítulos disponibles
+    subtitleTracks = m.video.availableCaptionTracks
+    
+    buttons = ["❌ Desactivar Subtítulos"]
+    m.subtitleTracksList = [-1] ' -1 = desactivar
+    
+    if subtitleTracks <> invalid and subtitleTracks.Count() > 0 then
+        for i = 0 to subtitleTracks.Count() - 1
+            track = subtitleTracks[i]
+            trackName = ""
+            
+            if track.Language <> invalid and track.Language <> "" then
+                trackName = getLanguageName(track.Language)
+            else
+                trackName = "Subtítulo " + (i + 1).ToStr()
+            end if
+            
+            if track.Description <> invalid and track.Description <> "" then
+                trackName = trackName + " (" + track.Description + ")"
+            end if
+            
+            buttons.Push(trackName)
+            m.subtitleTracksList.Push(i)
+        end for
+    end if
+    
+    buttons.Push("❌ Cancelar")
+    
+    dialog = CreateObject("roSGNode", "Dialog")
+    dialog.title = "💬 Subtítulos"
+    
+    if subtitleTracks = invalid or subtitleTracks.Count() = 0 then
+        dialog.message = "No hay subtítulos disponibles para este canal."
+    end if
+    
+    dialog.buttons = buttons
+    
+    m.top.dialog = dialog
+    m.top.dialog.observeField("buttonSelected", "onSubtitleTrackSelected")
+end sub
+
+sub onSubtitleTrackSelected()
+    buttonIdx = m.top.dialog.buttonSelected
+    
+    m.top.dialog.unobserveField("buttonSelected")
+    m.top.dialog.close = true
+    
+    if m.subtitleTracksList <> invalid and buttonIdx < m.subtitleTracksList.Count() then
+        trackIndex = m.subtitleTracksList[buttonIdx]
+        
+        if trackIndex = -1 then
+            print ">>> SUBTITLES: Desactivando subtítulos"
+            m.video.suppressCaptions = true
+            showChannelInfoMessage("💬 Subtítulos desactivados")
+        else
+            print ">>> SUBTITLES: Activando subtítulo "; trackIndex
+            m.video.suppressCaptions = false
+            m.video.selectCaptionTrack = trackIndex
+            showChannelInfoMessage("💬 Subtítulos activados")
+        end if
+    end if
+    
+    m.top.setFocus(true)
+end sub
+
+sub showCurrentChannelInfo()
+    if m.flatChannelList = invalid or m.flatChannelList.Count() = 0 then return
+    if m.currentChannelIndex < 0 or m.currentChannelIndex >= m.flatChannelList.Count() then return
+    
+    channel = m.flatChannelList[m.currentChannelIndex]
+    if channel = invalid then return
+    
+    message = "Canal: " + channel.title + chr(10)
+    message = message + "Posición: " + (m.currentChannelIndex + 1).ToStr() + " de " + m.flatChannelList.Count().ToStr() + chr(10)
+    
+    if m.video <> invalid then
+        state = m.video.state
+        message = message + "Estado: " + state + chr(10)
+        
+        ' Info de audio
+        audioTracks = m.video.availableAudioTracks
+        if audioTracks <> invalid then
+            message = message + "Pistas de audio: " + audioTracks.Count().ToStr() + chr(10)
+        end if
+        
+        ' Info de subtítulos
+        captionTracks = m.video.availableCaptionTracks
+        if captionTracks <> invalid then
+            message = message + "Subtítulos: " + captionTracks.Count().ToStr()
+        end if
+    end if
+    
+    dialog = CreateObject("roSGNode", "Dialog")
+    dialog.title = "ℹ️ Información del Canal"
+    dialog.message = message
+    dialog.buttons = ["OK"]
+    
+    m.top.dialog = dialog
+    m.top.dialog.observeField("buttonSelected", "onSimpleDialogClosed")
+end sub
+
+sub onSimpleDialogClosed()
+    m.top.dialog.unobserveField("buttonSelected")
+    m.top.dialog.close = true
+    m.top.setFocus(true)
+end sub
+
+sub showChannelInfoMessage(message as String)
+    if m.channelInfoOverlay = invalid or m.channelInfoLabel = invalid then return
+    
+    m.channelInfoLabel.text = message
+    m.channelInfoOverlay.visible = true
+    
+    if m.channelInfoTimer <> invalid then
+        m.channelInfoTimer.control = "stop"
+    end if
+    
+    m.channelInfoTimer = CreateObject("roSGNode", "Timer")
+    m.channelInfoTimer.duration = 2
+    m.channelInfoTimer.repeat = false
+    m.channelInfoTimer.ObserveField("fire", "hideChannelInfo")
+    m.channelInfoTimer.control = "start"
+end sub
+
+function getLanguageName(code as String) as String
+    languages = {
+        "es": "Español",
+        "spa": "Español",
+        "spanish": "Español",
+        "en": "Inglés",
+        "eng": "Inglés",
+        "english": "Inglés",
+        "pt": "Portugués",
+        "por": "Portugués",
+        "portuguese": "Portugués",
+        "fr": "Francés",
+        "fra": "Francés",
+        "fre": "Francés",
+        "french": "Francés",
+        "de": "Alemán",
+        "deu": "Alemán",
+        "ger": "Alemán",
+        "german": "Alemán",
+        "it": "Italiano",
+        "ita": "Italiano",
+        "italian": "Italiano",
+        "ja": "Japonés",
+        "jpn": "Japonés",
+        "japanese": "Japonés",
+        "ko": "Coreano",
+        "kor": "Coreano",
+        "korean": "Coreano",
+        "zh": "Chino",
+        "chi": "Chino",
+        "zho": "Chino",
+        "chinese": "Chino",
+        "ru": "Ruso",
+        "rus": "Ruso",
+        "russian": "Ruso",
+        "ar": "Árabe",
+        "ara": "Árabe",
+        "arabic": "Árabe",
+        "und": "Desconocido",
+        "mul": "Múltiple"
+    }
+    
+    lowerCode = LCase(code)
+    if languages.DoesExist(lowerCode) then
+        return languages[lowerCode]
+    end if
+    
+    return code
+end function
+
+' ==================== VISTA PREVIA DEL CANAL ====================
+
+sub onChannelFocused()
+    ' Cuando el usuario navega por la lista de canales, actualizar la vista previa
+    if m.isPlayingVideo then return
+    if m.channelList = invalid then return
+    
+    focusedIndex = m.channelList.itemFocused
+    print ">>> PREVIEW: Canal enfocado = "; focusedIndex
+    
+    ' Evitar recargar el mismo canal
+    if focusedIndex = m.lastFocusedChannel then return
+    m.lastFocusedChannel = focusedIndex
+    
+    ' Obtener el canal enfocado
+    channel = getChannelByFocusIndex(focusedIndex)
+    if channel <> invalid then
+        playPreviewChannel(focusedIndex)
+    end if
+end sub
+
+function getChannelByFocusIndex(focusIndex as Integer) as Object
+    if m.channelList = invalid or m.channelList.content = invalid then return invalid
+    
+    content = m.channelList.content
+    if content.getChildCount() = 0 then return invalid
+    
+    firstChild = content.getChild(0)
+    if firstChild = invalid then return invalid
+    
+    ' Si no hay grupos (canales directos)
+    if firstChild.getChildCount() = 0 then
+        return content.getChild(focusIndex)
+    else
+        ' Hay grupos, necesitamos calcular el índice correcto
+        ' Usar currFocusSection para obtener la sección actual
+        if m.channelList.currFocusSection <> invalid then
+            section = content.getChild(m.channelList.currFocusSection)
+            if section <> invalid then
+                ' El itemFocused es relativo a la sección
+                return section.getChild(focusIndex)
+            end if
+        end if
+    end if
+    
+    return invalid
+end function
+
+sub playPreviewChannel(channelIndex as Integer)
+    if m.previewVideo = invalid then return
+    if m.flatChannelList = invalid or m.flatChannelList.Count() = 0 then return
+    
+    ' Encontrar el canal en la lista plana basándose en el índice de foco
+    channel = invalid
+    
+    ' Intentar obtener el canal directamente de la lista
+    if m.channelList <> invalid and m.channelList.content <> invalid then
+        content = m.channelList.content
+        firstChild = content.getChild(0)
+        
+        if firstChild <> invalid and firstChild.getChildCount() = 0 then
+            ' Sin grupos
+            if channelIndex >= 0 and channelIndex < content.getChildCount() then
+                channel = content.getChild(channelIndex)
+            end if
+        else
+            ' Con grupos - usar la sección actual
+            if m.channelList.currFocusSection <> invalid then
+                section = content.getChild(m.channelList.currFocusSection)
+                if section <> invalid and channelIndex >= 0 and channelIndex < section.getChildCount() then
+                    channel = section.getChild(channelIndex)
+                end if
+            end if
+        end if
+    end if
+    
+    if channel = invalid or channel.url = invalid then 
+        print ">>> PREVIEW: No se pudo obtener el canal"
+        return
+    end if
+    
+    ' Evitar recargar el mismo canal en preview
+    if m.previewVideo.content <> invalid and m.previewVideo.content.url = channel.url then
+        return
+    end if
+    
+    print ">>> PREVIEW: Reproduciendo vista previa: "; channel.title
+    
+    ' Actualizar nombre del canal
+    if m.previewChannelName <> invalid then
+        m.previewChannelName.text = channel.title
+    end if
+    
+    ' Crear contenido para la vista previa
+    previewContent = CreateObject("roSGNode", "ContentNode")
+    previewContent.url = channel.url
+    previewContent.title = channel.title
+    previewContent.streamFormat = "hls"
+    previewContent.HttpSendClientCertificates = true
+    previewContent.HttpCertificatesFile = "common:/certs/ca-bundle.crt"
+    
+    m.previewVideo.content = previewContent
+    m.previewVideo.control = "play"
+    m.previewVideo.mute = true ' Silenciar la vista previa
+end sub
+
+sub stopPreviewVideo()
+    if m.previewVideo <> invalid then
+        m.previewVideo.control = "stop"
+        m.previewVideo.visible = false
+    end if
+end sub
+
 sub onChannelSelected()
     selectChannelFromList(m.channelList)
 end sub
@@ -945,6 +1431,11 @@ sub playChannel(content as Object)
 
 	print ">>> PLAY: Reproduciendo canal: "; content.title
 
+	' Detener la vista previa
+	if m.previewVideo <> invalid then
+		m.previewVideo.control = "stop"
+	end if
+
 	content.HttpSendClientCertificates = true
 	content.HttpCertificatesFile = "common:/certs/ca-bundle.crt"
 	m.video.EnableCookies()
@@ -963,6 +1454,7 @@ sub playChannel(content as Object)
 	
 	m.channelList.visible = false
 	m.sidePanel.visible = false
+	m.previewContainer.visible = false
 	
 	if not m.overlayVisible then
 		m.channelOverlay.visible = false

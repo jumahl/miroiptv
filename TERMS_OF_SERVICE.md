@@ -1,6 +1,6 @@
 # Términos de Uso de MiroIPTV
 
-**Última actualización:** 23 de octubre de 2025
+**Última actualización:** 29 de noviembre de 2025
 
 ## 1. Aceptación de los Términos
 
@@ -13,6 +13,9 @@ MiroIPTV es una aplicación de reproductor de medios para dispositivos Roku que 
 - Agregar y gestionar listas de reproducción M3U/IPTV
 - Visualizar canales de transmisión en vivo
 - Organizar y acceder a contenido multimedia de fuentes proporcionadas por el usuario
+- Cambiar entre múltiples pistas de audio cuando estén disponibles
+- Activar y desactivar subtítulos según disponibilidad
+- Previsualizar canales mientras navega por la lista
 
 ## 3. Licencia de Uso
 

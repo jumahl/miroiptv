@@ -30,11 +30,41 @@
     <LabelList
     	id="channelList"
     	translation="[430, 120]"
-    	itemSize="[1400, 50]"
+    	itemSize="[1020, 50]"
     	numRows="16"
     	itemSpacing="[0, 5]"
     	visible="true"/>
     
+    <!-- Vista previa del video en el menú -->
+    <Rectangle
+        id="previewContainer"
+        translation="[1480, 140]"
+        width="400"
+        height="270"
+        color="0x000000FF"
+        visible="true">
+        
+        <Video
+            id="PreviewVideo"
+            translation="[0, 0]"
+            width="400"
+            height="225"
+            visible="true"
+            focusable="false"
+            enableUI="false"/>
+        
+        <Label
+            id="previewChannelName"
+            translation="[5, 230]"
+            text=""
+            font="font:SmallSystemFont"
+            color="0xFFFFFFFF"
+            width="390"
+            height="35"
+            horizAlign="center"/>
+    </Rectangle>
+    
+    <!-- Video principal a pantalla completa -->
     <Video
         id="Video"
         translation="[0, 0]"
