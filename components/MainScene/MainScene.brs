@@ -49,12 +49,30 @@ sub init()
     m.isPlayingVideo = false
     m.overlayVisible = false
     m.lastFocusedChannel = -1
+    m.pendingChannelUrl = invalid
     
     loadSavedPlaylists()
     setupPlaylistMenu()
     
+    ' Cargar el último estado guardado
+    lastState = loadLastState()
+    
     if m.playlists.Count() > 0 then
-        loadPlaylist(m.playlists[0].url)
+        ' Usar la última playlist si existe, sino la primera
+        playlistIndex = 0
+        if lastState.playlistIndex <> invalid and lastState.playlistIndex >= 0 and lastState.playlistIndex < m.playlists.Count() then
+            playlistIndex = lastState.playlistIndex
+        end if
+        
+        m.currentPlaylist = playlistIndex
+        m.playlistList.jumpToItem = playlistIndex
+        
+        ' Guardar la URL del último canal para seleccionarlo después de cargar la lista
+        if lastState.channelUrl <> invalid and lastState.channelUrl <> "" then
+            m.pendingChannelUrl = lastState.channelUrl
+        end if
+        
+        loadPlaylist(m.playlists[playlistIndex].url)
     else
         showPlaylistManager()
     end if
@@ -146,6 +164,10 @@ function onKeyEvent(key as String, press as Boolean) as Boolean
                 else
                     m.video.control = "resume"
                 end if
+                result = true
+            else if(key = "replay")
+                ' Recargar el canal actual (Instant Replay)
+                reloadCurrentChannel()
                 result = true
             end if
         else
@@ -294,8 +316,12 @@ sub onPlaylistSelected()
     if selectedIdx = m.playlists.Count() then
         showPlaylistManager()
     else if selectedIdx >= 0 and selectedIdx < m.playlists.Count() then
-        loadPlaylist(m.playlists[selectedIdx].url)
         m.currentPlaylist = selectedIdx
+        m.pendingChannelUrl = invalid ' Limpiar canal pendiente al cambiar de playlist
+        loadPlaylist(m.playlists[selectedIdx].url)
+        
+        ' Guardar la playlist seleccionada
+        saveLastState()
     end if
 end sub
 
@@ -803,6 +829,9 @@ sub SetContent()
         
         m.channelList.content = m.allChannels
         m.channelList.SetFocus(true)
+        
+        ' Restaurar el último canal si hay uno pendiente
+        restorePendingChannel()
     else
         errorDialog = CreateObject("roSGNode", "Dialog")
         errorDialog.title = "Error"
@@ -1421,6 +1450,48 @@ sub findChannelIndexByUrl(url as String)
     m.currentChannelIndex = 0
 end sub
 
+sub reloadCurrentChannel()
+    print ">>> RELOAD: Recargando canal actual"
+    
+    if m.flatChannelList = invalid or m.currentChannelIndex < 0 then
+        print ">>> RELOAD ERROR: No hay canal para recargar"
+        return
+    end if
+    
+    channel = m.flatChannelList[m.currentChannelIndex]
+    if channel = invalid then
+        print ">>> RELOAD ERROR: Canal inválido"
+        return
+    end if
+    
+    ' Detener el video actual
+    m.video.control = "stop"
+    
+    ' Crear nuevo contenido
+    content = CreateObject("roSGNode", "ContentNode")
+    content.title = channel.title
+    content.url = channel.url
+    content.streamFormat = "hls"
+    
+    print ">>> RELOAD: Recargando: "; channel.title
+    
+    ' Forzar la recarga saltando la verificación de mismo canal
+    m.video.content = invalid
+    
+    ' Pequeño delay y luego reproducir
+    content.HttpSendClientCertificates = true
+    content.HttpCertificatesFile = "common:/certs/ca-bundle.crt"
+    m.video.EnableCookies()
+    m.video.SetCertificatesFile("common:/certs/ca-bundle.crt")
+    m.video.InitClientCertificates()
+    
+    m.video.content = content
+    m.video.control = "play"
+    m.top.setFocus(true)
+    
+    print ">>> RELOAD: Canal recargado exitosamente"
+end sub
+
 sub playChannel(content as Object)
 	content.streamFormat = "hls, mp4, mkv, mp3, avi, m4v, ts, mpeg-4, flv, vob, ogg, ogv, webm, mov, wmv, asf, amv, mpg, mp2, mpeg, mpe, mpv, mpeg2"
 
@@ -1470,6 +1541,9 @@ sub playChannel(content as Object)
 	m.playlistList.setFocus(false)
 	m.top.setFocus(true)
 	
+	' Guardar el estado actual (última playlist y canal)
+	saveLastState()
+	
 	print ">>> PLAY: Video iniciado, control = play"
 	print ">>> PLAY: Foco establecido en Scene para capturar teclas"
 end sub
@@ -1483,3 +1557,96 @@ function isValidUrl(url as String) as Boolean
     urlReg = CreateObject("roRegex", "^https?://[^\s/$.?#].[^\s]*$", "i")
     return urlReg.isMatch(url)
 end function
+
+' ==================== GUARDAR/CARGAR ÚLTIMO ESTADO ====================
+
+sub saveLastState()
+    print ">>> SAVE STATE: Guardando último estado"
+    
+    reg = CreateObject("roRegistrySection", "lastState")
+    
+    ' Guardar índice de la playlist actual
+    reg.Write("playlistIndex", m.currentPlaylist.ToStr())
+    
+    ' Guardar URL del canal actual
+    if m.flatChannelList <> invalid and m.currentChannelIndex >= 0 and m.currentChannelIndex < m.flatChannelList.Count() then
+        channel = m.flatChannelList[m.currentChannelIndex]
+        if channel <> invalid and channel.url <> invalid then
+            reg.Write("channelUrl", channel.url)
+            reg.Write("channelTitle", channel.title)
+            print ">>> SAVE STATE: Canal guardado = "; channel.title
+        end if
+    end if
+    
+    ' Guardar índice del canal (como respaldo)
+    reg.Write("channelIndex", m.currentChannelIndex.ToStr())
+    
+    reg.Flush()
+    print ">>> SAVE STATE: Estado guardado exitosamente"
+end sub
+
+function loadLastState() as Object
+    print ">>> LOAD STATE: Cargando último estado"
+    
+    state = {
+        playlistIndex: 0,
+        channelUrl: "",
+        channelTitle: "",
+        channelIndex: 0
+    }
+    
+    reg = CreateObject("roRegistrySection", "lastState")
+    
+    if reg.Exists("playlistIndex") then
+        state.playlistIndex = reg.Read("playlistIndex").ToInt()
+        print ">>> LOAD STATE: playlistIndex = "; state.playlistIndex
+    end if
+    
+    if reg.Exists("channelUrl") then
+        state.channelUrl = reg.Read("channelUrl")
+        print ">>> LOAD STATE: channelUrl = "; state.channelUrl
+    end if
+    
+    if reg.Exists("channelTitle") then
+        state.channelTitle = reg.Read("channelTitle")
+        print ">>> LOAD STATE: channelTitle = "; state.channelTitle
+    end if
+    
+    if reg.Exists("channelIndex") then
+        state.channelIndex = reg.Read("channelIndex").ToInt()
+        print ">>> LOAD STATE: channelIndex = "; state.channelIndex
+    end if
+    
+    return state
+end function
+
+sub restorePendingChannel()
+    ' Restaurar el canal pendiente después de cargar la lista
+    if m.pendingChannelUrl = invalid or m.pendingChannelUrl = "" then return
+    
+    print ">>> RESTORE: Buscando canal pendiente: "; m.pendingChannelUrl
+    
+    ' Buscar el canal por URL
+    for i = 0 to m.flatChannelList.Count() - 1
+        channel = m.flatChannelList[i]
+        if channel <> invalid and channel.url = m.pendingChannelUrl then
+            m.currentChannelIndex = i
+            m.lastFocusedChannel = i
+            
+            ' Saltar al canal en la lista
+            if m.channelList <> invalid then
+                m.channelList.jumpToItem = i
+            end if
+            
+            ' Reproducir vista previa del canal
+            playPreviewChannel(i)
+            
+            print ">>> RESTORE: Canal encontrado y seleccionado en índice "; i
+            m.pendingChannelUrl = invalid
+            return
+        end if
+    end for
+    
+    print ">>> RESTORE: Canal no encontrado, usando primer canal"
+    m.pendingChannelUrl = invalid
+end sub

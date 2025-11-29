@@ -38,6 +38,7 @@ https://my.roku.com/account/add?channel=DMQKLXP
 | -------------------- | ------------------------------------------------- |
 | **OK**               | Abrir menú de opciones (audio, subtítulos, info)  |
 | **Play/Pause**       | Pausar o reanudar el video                        |
+| **Instant Replay**   | Recargar el canal actual (útil si se pausó)       |
 | **←**                | Mostrar/ocultar menú de canales (el video sigue!) |
 | **↑ / Rewind**       | Canal anterior (zapping instantáneo)              |
 | **↓ / Fast Forward** | Canal siguiente (zapping instantáneo)             |
@@ -51,6 +52,8 @@ https://my.roku.com/account/add?channel=DMQKLXP
 - ❌ **Cerrar** - Cierra el menú de opciones
 
 > **Tip:** Los canales son cíclicos - el último conecta con el primero
+
+> **Tip:** Si el video se congela o pausa, presiona **Instant Replay** (⏪) para recargar el canal
 
 ## 📺 Playlists Personalizadas
 
@@ -116,7 +119,7 @@ telnet TU_IP_ROKU 8085
 
 ## 📋 Versión
 
-- **Versión actual:** 1.2.0
+- **Versión actual:** 2.2.0
 - **Última actualización:** Noviembre 2025
 
 ## 📄 Documentación Legal
